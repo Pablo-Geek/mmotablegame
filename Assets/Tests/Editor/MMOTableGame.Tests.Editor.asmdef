@@ -1,0 +1,14 @@
+{
+  "name": "MMOTableGame.Tests.Editor",
+  "rootNamespace": "MMOTableGame.Tests",
+  "references": [
+    "MMOTableGame.Runtime"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}

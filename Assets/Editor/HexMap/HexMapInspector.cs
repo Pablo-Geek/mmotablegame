@@ -22,10 +22,31 @@ namespace MMOTableGame.Editor.Hexes
         {
             DrawDefaultInspector();
 
+            HexMap map = (HexMap)target;
+            EditorGUILayout.Space();
+            EditorGUI.BeginChangeCheck();
+            float activeLayerHeight = EditorGUILayout.FloatField(
+                $"Layer {map.ActiveLayer} Height",
+                map.ActiveLayerLocalHeight);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(map, "Change Hex Layer Height");
+                map.SetLayerHeight(map.ActiveLayer, activeLayerHeight);
+                ResnapLayer(map, map.ActiveLayer);
+                EditorUtility.SetDirty(map);
+                SceneView.RepaintAll();
+            }
+
+            if (GUILayout.Button("Resnap Active Layer"))
+            {
+                ResnapLayer(map, map.ActiveLayer);
+            }
+
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
                 "Activate the tool, choose the active layer with −/+ in the Scene View, " +
-                "then use Place, Erase or Select. Layer Height controls the vertical spacing. " +
+                "then use Place, Erase or Select. Each layer remembers its own absolute height. " +
+                "Default Layer Spacing initializes new layers. " +
                 "The grid is an editor guide and is not rendered in the game.",
                 MessageType.Info);
 
@@ -33,6 +54,22 @@ namespace MMOTableGame.Editor.Hexes
             {
                 ToolManager.SetActiveTool<HexMapEditorTool>();
                 SceneView.lastActiveSceneView?.Focus();
+            }
+        }
+
+        private static void ResnapLayer(HexMap map, int layer)
+        {
+            HexTileInstance[] tiles = map.GetComponentsInChildren<HexTileInstance>(true);
+            foreach (HexTileInstance tile in tiles)
+            {
+                if (tile.Layer != layer)
+                {
+                    continue;
+                }
+
+                Undo.RecordObject(tile.transform, "Resnap Hex Layer");
+                tile.transform.localPosition = map.CoordinatesToLocalPosition(tile.Coordinates, layer);
+                EditorUtility.SetDirty(tile.transform);
             }
         }
     }

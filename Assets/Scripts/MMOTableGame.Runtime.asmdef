@@ -1,0 +1,8 @@
+{
+  "name": "MMOTableGame.Runtime",
+  "rootNamespace": "MMOTableGame",
+  "references": [
+    "Unity.InputSystem"
+  ],
+  "autoReferenced": true
+}

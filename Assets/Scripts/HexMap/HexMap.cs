@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MMOTableGame.Hexes
 {
@@ -8,8 +10,10 @@ namespace MMOTableGame.Hexes
         [Header("Grid")]
         [SerializeField, Min(0.01f)] private float hexRadius = 1f;
         [SerializeField, Range(1, 50)] private int gridRadius = 10;
-        [SerializeField, Min(0.01f)] private float layerHeight = 0.5f;
+        [FormerlySerializedAs("layerHeight")]
+        [SerializeField, Min(0.01f)] private float defaultLayerSpacing = 0.5f;
         [SerializeField, Range(0, 50)] private int activeLayer;
+        [SerializeField, HideInInspector] private List<float> layerHeights = new();
 
         [Header("Placement")]
         [SerializeField] private GameObject placementPrefab;
@@ -20,9 +24,9 @@ namespace MMOTableGame.Hexes
 
         public float HexRadius => Mathf.Max(0.01f, hexRadius);
         public int GridRadius => Mathf.Max(1, gridRadius);
-        public float LayerHeight => Mathf.Max(0.01f, layerHeight);
+        public float DefaultLayerSpacing => Mathf.Max(0.01f, defaultLayerSpacing);
         public int ActiveLayer => Mathf.Max(0, activeLayer);
-        public float ActiveLayerLocalHeight => ActiveLayer * LayerHeight;
+        public float ActiveLayerLocalHeight => GetLayerHeight(ActiveLayer);
         public GameObject PlacementPrefab => placementPrefab;
         public Color GridColor => gridColor;
         public bool ShowCoordinates => showCoordinates;
@@ -40,8 +44,26 @@ namespace MMOTableGame.Hexes
         public Vector3 CoordinatesToLocalPosition(HexCoordinates coordinates, int layer)
         {
             Vector3 position = HexGridMath.CoordinatesToLocalPosition(coordinates, HexRadius);
-            position.y = Mathf.Max(0, layer) * LayerHeight;
+            position.y = GetLayerHeight(layer);
             return position;
+        }
+
+        public float GetLayerHeight(int layer)
+        {
+            int safeLayer = Mathf.Max(0, layer);
+            if (layerHeights != null && safeLayer < layerHeights.Count)
+            {
+                return Mathf.Max(0f, layerHeights[safeLayer]);
+            }
+
+            return safeLayer * DefaultLayerSpacing;
+        }
+
+        public void SetLayerHeight(int layer, float height)
+        {
+            int safeLayer = Mathf.Clamp(layer, 0, 50);
+            EnsureLayerHeightExists(safeLayer);
+            layerHeights[safeLayer] = Mathf.Max(0f, height);
         }
 
         public HexCoordinates WorldPositionToCoordinates(Vector3 worldPosition)
@@ -79,14 +101,28 @@ namespace MMOTableGame.Hexes
         public void SetActiveLayer(int layer)
         {
             activeLayer = Mathf.Clamp(layer, 0, 50);
+            EnsureLayerHeightExists(activeLayer);
         }
 
         private void OnValidate()
         {
             hexRadius = Mathf.Max(0.01f, hexRadius);
             gridRadius = Mathf.Clamp(gridRadius, 1, 50);
-            layerHeight = Mathf.Max(0.01f, layerHeight);
+            defaultLayerSpacing = Mathf.Max(0.01f, defaultLayerSpacing);
             activeLayer = Mathf.Clamp(activeLayer, 0, 50);
+            EnsureLayerHeightExists(activeLayer);
+        }
+
+        private void EnsureLayerHeightExists(int layer)
+        {
+            layerHeights ??= new List<float>();
+            while (layerHeights.Count <= layer)
+            {
+                float nextHeight = layerHeights.Count == 0
+                    ? 0f
+                    : layerHeights[^1] + DefaultLayerSpacing;
+                layerHeights.Add(nextHeight);
+            }
         }
     }
 }
